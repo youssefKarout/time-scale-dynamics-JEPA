@@ -1,0 +1,19 @@
+=== runs/movi_a_poc/shared/ckpt_epoch99.pt  (variant=shared, n_clips=50) ===
+  chtg/delta               +0.0000
+  chtgstd/delta            +0.0000
+  chtg/diag                +0.2527
+  chtg/offdiag             +0.2527
+  band/separation          +0.0000
+  band/adv_short_mean      +0.0000
+  band/adv_long_mean       +0.0000
+  compose/gap              -0.0432
+  repr/h0_std              +0.2085
+
+  horizon grid      :       1       2       3       4       5       6       7       8       9      10      11      12      13      14      15      16
+  err field0       :   0.016   0.043   0.078   0.117   0.145   0.164   0.183   0.202   0.226   0.251   0.280   0.303   0.327   0.345   0.365   0.388
+  err field1       :   0.016   0.043   0.078   0.117   0.145   0.164   0.183   0.202   0.226   0.251   0.280   0.303   0.327   0.345   0.365   0.388
+  adv (f0-f1)       :   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000
+  (T = trained tau) :                      T                                                                                   T      
+
+wrote runs_eval_shared.json
+SEXIT=0  

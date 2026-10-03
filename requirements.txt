@@ -1,0 +1,13 @@
+# Latent Time-Scale Dynamics JEPA — Python dependencies
+# NOTE: PyTorch is intentionally NOT pinned here because the install command
+# depends on the target machine:
+#   Local (no GPU, Windows):  pip install torch --index-url https://download.pytorch.org/whl/cpu
+#   Colab (GPU, CUDA):        pip install torch
+numpy>=1.24
+einops>=0.7
+PyYAML>=6.0
+matplotlib>=3.7
+tqdm>=4.66
+timm>=0.9        # ViT-S encoder backend (model.encoder=vit)
+huggingface_hub>=0.20  # timm weight downloads
+

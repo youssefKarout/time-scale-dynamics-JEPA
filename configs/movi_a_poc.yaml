@@ -1,0 +1,65 @@
+# Latent Time-Scale Dynamics JEPA — PoC config (MOVi-A)
+# Pure-emergent study: primary run uses ONLY the horizon objective + M5 target
+# standardization. VICReg is anti-collapse only (not a scale mechanism).
+
+run:
+  name: movi_a_poc
+  seed: 0
+  output_dir: runs
+  # primary     : separate velocity field per horizon (the method)
+  # shared      : single velocity field integrated to both horizons (control B1)
+  # shared_wide : B1 capacity-matched to primary (one field, 2x hidden width)
+  # horizon_cond: single predictor g(h0, tau) (control B2, multi-horizon JEPA)
+  # regressor   : independent MLP per horizon, no dynamics (control B3)
+  variant: primary
+  device: auto            # auto | cpu | cuda
+
+data:
+  root: "./data/movi_a_rgb"  # override via --set data.root=<path>
+  num_clips: 1000         # use first N .npz files
+  frame_size: 96          # resize source 128 -> 96
+  horizons: [4, 16]
+  max_start_jitter: 1     # +/- frames around the stratified start index
+  num_workers: 0
+  val_fraction: 0.05
+
+model:
+  latent_dim: 256
+  encoder_hidden: 256
+  field_hidden: 512
+  field_time_dim: 16      # number of sinusoidal frequencies (emb dim = 2x)
+  field_out_rank: 0       # 0 => full rank; >0 => low-rank output (mechanism M2)
+  shared_wide_mult: 2.0   # hidden-width multiplier for the shared_wide control
+  integrator: rk4         # rk4 | euler
+  integrator_steps: 8
+  ema_beta: 0.996
+  standardize_targets: true   # mechanism M5 (target whitening, hygiene)
+
+loss:
+  distance: cosine        # cosine | mse
+  branch_weights: null    # e.g. [1.0, 1.0]; null => equal
+  # Anti-collapse: the variance term is bounded and safe; the covariance term is
+  # unstable for low-rank latents (d=256 from a pooled CNN => highly correlated
+  # features), so it is OFF by default. Primary run relies on EMA + stop-grad
+  # (standard JEPA), which is why this is a "pure-emergent" recipe.
+  vicreg_var: 1.0
+  vicreg_cov: 0.0
+  vicreg_gamma: 1.0
+  vicreg_eps: 1.0e-4
+
+optim:
+  lr_encoder: 1.0e-4
+  lr_field: 3.0e-4
+  weight_decay: 0.05
+  warmup_epochs: 5
+  epochs: 100
+  batch_size: 64
+  grad_clip: 1.0
+  amp: true
+
+metrics:
+  # Decisive test needs held-out horizons on BOTH sides: short (tau<4) and long
+  # (tau>4, incl. beyond tau2=16). T=24 caps tau<=20 (t>=1, need t+tau<=23).
+  band_horizons: [1, 2, 3, 4, 6, 8, 12, 16, 20]
+  every_n_epochs: 5
+  num_metric_clips: 64    # clips used to compute specialization metrics

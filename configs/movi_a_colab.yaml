@@ -1,0 +1,66 @@
+# Latent Time-Scale Dynamics JEPA — Colab config (MOVi-A, de-gauged + ViT-S)
+# De-gauging: field_tau_dim=1 feeds log(tau) into each velocity field so
+# branches are distinguishable (breaks the V0 ~= V1 gauge collapse).
+# Encoder: ViT-S via timm (vit_small_patch16_224, pretrained). Set
+# vit_freeze=true for a frozen-backbone warmup, false to fine-tune.
+
+run:
+  name: movi_a_colab
+  seed: 0
+  output_dir: runs
+  # primary | shared | shared_wide | horizon_cond | regressor
+  variant: primary
+  device: auto
+
+data:
+  root: "./data/movi_a_rgb"   # <-- override with --set data.root=<path>
+  num_clips: 1000
+  frame_size: 128          # ViT likes >=128; CNN path used 96
+  horizons: [4, 16]
+  max_start_jitter: 1
+  num_workers: 2
+  val_fraction: 0.05
+
+model:
+  encoder: vit            # cnn | vit
+  vit_backbone: vit_small_patch16_224
+  vit_pretrained: true
+  vit_freeze: true         # stage A frozen; flip to false for stage B
+  vit_img_size: 224        # frames are resized+ImageNet-normalised inside encoder
+  latent_dim: 384          # ViT-S width; use 256 to match old ckpts
+  encoder_hidden: 256      # CNN path only
+  field_hidden: 512
+  field_time_dim: 16
+  field_tau_dim: 1         # 0 => legacy gauge-degenerate; 1 => de-gauged
+  field_film: true         # True => strong FiLM scale-conditioning (needs tau_dim>0)
+  field_tau_fourier: 4     # #Fourier freqs for the FiLM tau embedding
+  field_out_rank: 0
+  shared_wide_mult: 2.0
+  integrator: rk4
+  integrator_steps: 8
+  ema_beta: 0.996
+  standardize_targets: true
+
+loss:
+  distance: cosine
+  branch_weights: null
+  vicreg_var: 1.0
+  vicreg_cov: 0.0
+  vicreg_gamma: 1.0
+  vicreg_eps: 1.0e-4
+
+optim:
+  lr_encoder: 1.0e-4       # used for ViT head + CNN; backbone gets lr_backbone when unfrozen
+  lr_backbone: 1.0e-5      # separate backbone LR (only when vit_freeze=false)
+  lr_field: 3.0e-4
+  weight_decay: 0.05
+  warmup_epochs: 5
+  epochs: 100
+  batch_size: 64           # lower to 32/16 on 16GB GPUs with ViT-224
+  grad_clip: 1.0
+  amp: true
+
+metrics:
+  band_horizons: [1, 2, 3, 4, 6, 8, 12, 16, 20]
+  every_n_epochs: 5
+  num_metric_clips: 64
